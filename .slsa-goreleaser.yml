@@ -33,6 +33,6 @@ ldflags:
   - "-X main.Version={{ github.event.release.tag }}"
   - "-X main.Commit={{ github.event.commits[0].id }}"
   - "-X main.CommitDate={{ github.event.commits[0].timestamp }}"
-  - "-X main.Review={{ github.event.review }}"
-  - "-X main.Reviewers={{ github.event.reviewers }}"
   - "-X main.Author={{ github.event.commits[0].author.name }}"
+#  - "-X main.Review={{ github.event.review }}"
+#  - "-X main.Reviewers={{ github.event.reviewers }}"
