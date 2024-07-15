@@ -26,3 +26,12 @@ jobs:
 
     - name: Test
       run: go test -v ./...
+
+    # Set a stage here called PrintInfo that prints out the commit information and the review information.
+    - name: PrintInfo
+      run: |
+        echo "Commit: ${{ github.sha }}"
+        echo "Review: ${{ github.event.review }}"
+        echo "Reviewers: ${{ github.event.reviewers }}"
+        echo "Author: ${{ github.event.commits[0].author.name }}"
+
