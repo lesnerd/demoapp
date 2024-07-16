@@ -21,6 +21,7 @@ jobs:
           JF_URL: ${{ secrets.JF_URL }}
           JF_USER: ${{ secrets.JF_USER }}
           JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
+          RT_URL: ${{ variable.RT_URL }}
 
       - name: Run JFrog CLI
         run: |
@@ -28,7 +29,7 @@ jobs:
           jf -v
           jf --help
           echo "Url is $JF_URL"
-          echo "Secret is: ${{ variable.RT_URL }}"
+          echo "User is $RT_URL"
 #          jf rt dl generic-local-robi/v2/2.100.0/jfrog-cli-linux-amd64/jfrog --flat --fail-no-op
 
 #          chmod +x ./jfrog
