@@ -24,11 +24,10 @@ jobs:
 
       - name: Run JFrog CLI
         run: |
-#          npm -v
+          npm -v
           jf -v
-#          jf --help
-          # print out the JF_URL environment variable
-          echo "Url: $JF_URL"
+          jf --help
+          echo "Url is $JF_URL"
 #          jf rt dl generic-local-robi/v2/2.100.0/jfrog-cli-linux-amd64/jfrog --flat --fail-no-op
 
 #          chmod +x ./jfrog
