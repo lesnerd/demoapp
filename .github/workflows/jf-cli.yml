@@ -28,7 +28,7 @@ jobs:
           jf -v
           jf --help
           echo "Url is $JF_URL"
-          echo "Secret is: ${{ secrets.JF_URL }}"
+          echo "Secret is: ${{ variable.RT_URL }}"
 #          jf rt dl generic-local-robi/v2/2.100.0/jfrog-cli-linux-amd64/jfrog --flat --fail-no-op
 
 #          chmod +x ./jfrog
