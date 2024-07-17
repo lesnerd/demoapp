@@ -57,12 +57,28 @@ jobs:
           JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
       - name: Release Info Evidence
         run: |
-          JSON=$(jq -n \
-            --arg commit ${{ github.event.commits[0].id }} \
-            --arg review "Marie Lupen" \
-            --arg reviewers "Maries Lupens" \
-            '$ARGS.named'
-          )
-          echo "$JSON"
+          if [ "${{ github.event_name }}" == "push" ]; then
+              echo "Push event"
+              JSON=$(jq -n \
+                --arg commit ${{ github.event.commits[0].id }} \
+                --arg review "Marie Lupen" \
+                --arg reviewers "Maries Lupens" \
+                '$ARGS.named'
+              )
+              echo "$JSON"
+          fi
+          # print the code review information if it is a pull request
+          echo "event name: ${{ github.event_name }}"
+          echo "========================="
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+              echo "Review: ${{ github.event.review }}"
+              echo "Reviewers: ${{ github.event.reviewers }}"
+          fi
+          # print the release information if it is a release
+            if [ "${{ github.event_name }}" == "release" ]; then
+                echo "Release: ${{ github.event.release }}"
+            fi
           
+          
+          echo "event object:"
           echo "github.event: ${{ toJson(github.event) }}"
