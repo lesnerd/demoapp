@@ -21,7 +21,7 @@ jobs:
           JF_URL: ${{ secrets.JF_URL }}
           JF_USER: ${{ secrets.JF_USER }}
           JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
-          RT_URL_L: ${{ env.RT_URL }}
+          RT_URL_L: ${{ env.JF_URL }}
 
       - name: Run JFrog CLI
         run: |
@@ -30,8 +30,8 @@ jobs:
           jf --help
           echo "Url is $JF_URL"
           echo "User is $RT_URL"
-          echo test1 vars as ${{ vars.RT_URL }}
-          echo test1 vars as ${{ env.RT_URL_L }}
+          echo test1 vars as ${{ vars.JF_URL }}
+          echo test1 vars as ${{ env.JF_URL }}
           echo "Ping the server"
           jf rt ping
           echo "jf show config"
