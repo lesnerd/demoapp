@@ -1,4 +1,4 @@
-name: "JFrog CLI Example"
+name: "JFrog CLI"
 on: push
 #on: release
 
@@ -26,7 +26,7 @@ jobs:
       - name: Run JFrog CLI
         run: |
           jf -v
-          echo test1 vars as ${{ vars.JF_URL }}
+          echo artifactory url: ${{ vars.JF_URL }}
           echo "Ping the server"
           jf rt ping
           echo "jf show config"
@@ -37,3 +37,9 @@ jobs:
 #          ../jfrog npm-config --repo-resolve npm-remote
 #          ../jfrog npm i
 #          ../jfrog rt bp
+
+      - name:
+          run: |
+            echo "Commit: ${{ github.event.commits[0].id }}"
+            echo "Commit Date: ${{ github.event.commits[0].timestamp }}"
+            echo "Author: ${{ github.event.commits[0].author.name }}"
