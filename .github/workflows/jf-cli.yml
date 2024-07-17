@@ -41,6 +41,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
+      - name: Run jq
+        uses: sergeysova/jq-action@v2
         env:
           JF_URL: ${{ vars.JF_URL }}
           JF_USER: ${{ secrets.JF_USER }}
