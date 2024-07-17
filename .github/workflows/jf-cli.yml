@@ -25,13 +25,8 @@ jobs:
 
       - name: Run JFrog CLI
         run: |
-          npm -v
           jf -v
-          jf --help
-          echo "Url is ${{ env.JF_URL }}"
-          echo "User is ${{ env.RT_URL }}"
           echo test1 vars as ${{ vars.JF_URL }}
-          echo test1 env as ${{ env.JF_URL }}
           echo "Ping the server"
           jf rt ping
           echo "jf show config"
