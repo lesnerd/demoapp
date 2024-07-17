@@ -57,3 +57,6 @@ jobs:
           )
 
           echo "$JSON"
+          
+          echo "=============="
+            echo ${{ github.event }}
