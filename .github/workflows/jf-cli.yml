@@ -1,5 +1,13 @@
 name: "JFrog CLI"
-on: push
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  release:
+    types: [created]
 #on: release
 
 permissions:
@@ -55,7 +63,6 @@ jobs:
             --arg reviewers "Maries Lupens" \
             '$ARGS.named'
           )
-
           echo "$JSON"
           
           echo "github.event: ${{ toJson(github.event) }}"
