@@ -37,7 +37,8 @@ jobs:
 #          chmod +x ./jfrog
 #          ./jfrog -v
 #          # Ping the server
-#          ./jfrog rt ping
+          echo "Ping the server"
+          ./jfrog rt ping
 #          # Collect environment variables for the build
 #          cd npm-example
 #          ../jfrog npm-config --repo-resolve npm-remote
