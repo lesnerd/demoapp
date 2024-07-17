@@ -34,6 +34,8 @@ jobs:
           echo test1 vars as ${{ env.RT_URL_L }}
           echo "Ping the server"
           jf rt ping
+          echo "jf show config"
+          jf config show
 #          # Collect environment variables for the build
 #          cd npm-example
 #          ../jfrog npm-config --repo-resolve npm-remote
