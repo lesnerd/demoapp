@@ -58,7 +58,4 @@ jobs:
 
           echo "$JSON"
           
-          echo "=============="
-          echo ${{ github.event }}
-          echo "=============="
-          echo ${{ toJson(david) }}
+          echo "github.event: ${{ toJson(github.event) }}"
