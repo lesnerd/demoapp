@@ -52,3 +52,14 @@ jobs:
           echo "Author: ${{ github.event.commits[0].author.name }}"
           echo "Review: ${{ github.event.review }}"
           echo "Reviewers: ${{ github.event.reviewers }}"
+          WHAT="something"
+          WHEN="now"
+
+          JSON=$(jq -n \
+            --arg commit ${{ github.event.commits[0].id }} \
+            --arg review ${{ github.event.review }} \
+            --arg reviewers ${{ github.event.reviewers }} \
+            '$ARGS.named'
+          )
+
+          echo "$JSON"
