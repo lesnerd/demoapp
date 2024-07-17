@@ -32,12 +32,18 @@ jobs:
           echo "jf show config"
           jf config show > f1
           cat f1
-#          # Collect environment variables for the build
-#          cd npm-example
-#          ../jfrog npm-config --repo-resolve npm-remote
-#          ../jfrog npm i
-#          ../jfrog rt bp
 
+  evidence-collection:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
+        env:
+          JF_URL: ${{ vars.JF_URL }}
+          JF_USER: ${{ secrets.JF_USER }}
+          JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
       - name: Release Info Evidence
         run: |
           echo "Commit: ${{ github.event.commits[0].id }}"
