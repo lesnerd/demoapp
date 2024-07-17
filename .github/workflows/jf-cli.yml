@@ -35,7 +35,8 @@ jobs:
           echo "Ping the server"
           jf rt ping
           echo "jf show config"
-          jf config show
+          jf config show > f1
+          cat f1
 #          # Collect environment variables for the build
 #          cd npm-example
 #          ../jfrog npm-config --repo-resolve npm-remote
