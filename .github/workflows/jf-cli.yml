@@ -59,8 +59,8 @@ jobs:
 
           JSON=$(jq -n \
             --arg commit ${{ github.event.commits[0].id }} \
-            --arg review ${{ github.event.review }} \
-            --arg reviewers ${{ github.event.reviewers }} \
+            --arg review "Marie Lupen" \
+            --arg reviewers "Maries Lupens" \
             '$ARGS.named'
           )
 
