@@ -38,8 +38,10 @@ jobs:
 #          ../jfrog npm i
 #          ../jfrog rt bp
 
-      - name:
-          run: |
-            echo "Commit: ${{ github.event.commits[0].id }}"
-            echo "Commit Date: ${{ github.event.commits[0].timestamp }}"
-            echo "Author: ${{ github.event.commits[0].author.name }}"
+      - name: Release Info Evidence
+        run: |
+          echo "Commit: ${{ github.event.commits[0].id }}"
+          echo "Commit Date: ${{ github.event.commits[0].timestamp }}"
+          echo "Author: ${{ github.event.commits[0].author.name }}"
+          echo "Review: ${{ github.event.review }}"
+          echo "Reviewers: ${{ github.event.reviewers }}"
