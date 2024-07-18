@@ -60,14 +60,14 @@ jobs:
               echo "Push event"
               JSON=$(jq -n \
                 --arg commit ${{ github.event.commits[0].id }} \
-                --arg author ${{ github.event.commits[0].author.name }} \
-                --arg date ${{ github.event.commits[0].timestamp }} \
-                --arg message ${{ github.event.commits[0].message }} \
+                --arg review "Marie Lupen" \
+                --arg reviewers "Maries Lupens" \
                 '$ARGS.named'
               )
               echo "$JSON"
           fi
           if [ "${{ github.event_name }}" == "pull_request" ]; then
+              echo "====== Pull Request ======"
               echo "Review: ${{ github.event.review }}"
               echo "Reviewers: ${{ github.event.reviewers }}"              
               echo "Review: ${{ toJson(github.event.review) }}"
