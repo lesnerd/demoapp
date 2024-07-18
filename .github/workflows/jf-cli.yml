@@ -75,7 +75,7 @@ jobs:
               echo "PR: ${{ toJson(github.event.pull_request) }}"
           fi
 
-      - name: Get Commits and Save as JSON
+      - name: Get Commits and Save as JSON between releases
         run: |
           if [ "${{ github.event_name }}" == "release" ]; then
               PREV_TAG=$(git describe --tags --abbrev=0 $(git rev-list --tags --skip=1 --max-count=1))
@@ -89,5 +89,39 @@ jobs:
               echo "Commits saved as commits.json"
               cat commits.json
           fi
+
+      - name: 📋 Get Commits since last Release
+        id: changes
+        uses: simbo/changes-since-last-release-action@v1
+      - name: 📝 Output collected Data
+        run: |
+          echo "Changes since ${{ steps.changes.outputs.last-tag }}:"
+          echo "${{ steps.changes.outputs.log }}"
                 
-                
+  changes-since-last-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📎 Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: 📋 Get Commits since last Release
+        id: changes
+        uses: simbo/changes-since-last-release-action@v1
+      - name: 📝 Output collected Data
+        run: |
+          echo "Changes since ${{ steps.changes.outputs.last-tag }}:"
+          echo "${{ steps.changes.outputs.log }}"
+
+  sonar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚀 Run SonarQube Analysis
+        run: |
+          # Run SonarQube analysis here
+          # Save the output to a JSON file (e.g., sonar-output.json)
+      - name: 📁 Upload SonarQube Output
+        uses: actions/upload-artifact@v2
+        with:
+          name: sonar-output
+          path: sonar-output.json
