@@ -113,12 +113,13 @@ jobs:
         run: |
           echo "Changes since ${{ steps.changes.outputs.last-tag }}:"
           echo "${{ steps.changes.outputs.log }}"
-          echo "${{ steps.changes.outputs.log }}" | sed 's/-/"/g' | sed 's/ /","/g' | sed 's/^/["/' | sed 's/$/"]/g' > changes.json
+          echo "${{ steps.changes.outputs.log }}" | sed 's/-/\\n/g' | tr '\n' ',' > changes.json
           cat changes.json
 
 
   sonar:
     runs-on: ubuntu-latest
+    needs: [ build ]
     steps:
       - name: 🚀 Run SonarQube Analysis
         run: |
