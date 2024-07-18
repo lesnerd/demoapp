@@ -25,6 +25,7 @@ func NewIntCalculator(num1, num2 int, op operation) *intCalculator {
 	}
 }
 
+// calculate performs the operation on the two numbers and returns the result
 func (c *intCalculator) calculate() (int, error) {
 	switch c.op {
 	case add:
