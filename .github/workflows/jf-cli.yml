@@ -57,7 +57,7 @@ jobs:
         run: |
           echo "EVENT NAME: ${{ github.event_name }}"
           if [ "${{ github.event_name }}" == "push" ]; then
-              echo "github.commit: ${{ toJson(github.event.commits[0]) }}"
+#              echo "github.commit: ${{ toJson(github.event.commits[0]) }}"
               JSON=$(jq -n \
                 --arg hash "${{ github.event.commits[0].id }}" \
                 --arg author "${{ github.event.commits[0].author.name }}" \
@@ -74,7 +74,6 @@ jobs:
           if [ "${{ github.event_name }}" == "pull_request" ]; then
               echo "====== Pull Request ======"
               echo "PR: ${{ toJson(github.event.pull_request) }}"
-              echo "PR Commits: ${{ toJson(github.event.pull_request.commits) }}"
           fi
-          echo "event object:"
-          echo "github.event: ${{ toJson(github.event) }}"
+#          echo "event object:"
+#          echo "github.event: ${{ toJson(github.event) }}"
