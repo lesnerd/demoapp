@@ -55,7 +55,8 @@ jobs:
           JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
       - name: Release Info Evidence
         run: |
-          if [ "${{ github.event_name }}" == "push" ]; then
+          echo "EVENT NAME: ${{ github.event_name }}"
+          if [ "${{ github.event_name }}" == "push" ] || [ "${{ github.event_name }}" == "release" ]; then
               echo "Push event"
               JSON=$(jq -n \
                 --arg commit ${{ github.event.commits[0].id }} \
@@ -65,9 +66,7 @@ jobs:
               )
               echo "$JSON"
           fi
-          # print the code review information if it is a pull request
-          echo "event name: ${{ github.event_name }}"
-          echo "========================="
+          echo "============ Pull Request ============="
           if [ "${{ github.event_name }}" == "pull_request" ]; then
               echo "Review: ${{ github.event.review }}"
               echo "Reviewers: ${{ github.event.reviewers }}"              
