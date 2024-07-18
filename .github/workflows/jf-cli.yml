@@ -71,6 +71,10 @@ jobs:
               echo "====== Release ======"
               echo "Release: ${{ toJson(github.event.release) }}"
           fi
-        
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+              echo "====== Pull Request ======"
+              echo "PR: ${{ toJson(github.event.pull_request) }}"
+              echo "PR Commits: ${{ toJson(github.event.pull_request.commits) }}"
+          fi
           echo "event object:"
           echo "github.event: ${{ toJson(github.event) }}"

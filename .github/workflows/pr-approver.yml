@@ -1,0 +1,17 @@
+name: "Capture PR Approver"
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  capture-approver:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Echo Approver Username
+        if: github.event.review.state == 'approved'
+        run: |
+          echo "The PR was approved by ${GITHUB_ACTOR}"
+          # Here you might use GitHub API to fetch more details if needed
