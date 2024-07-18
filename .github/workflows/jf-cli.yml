@@ -59,11 +59,10 @@ jobs:
           if [ "${{ github.event_name }}" == "push" ]; then
               echo "github.commit: ${{ toJson(github.event.commits[0]) }}"
               JSON=$(jq -n \
-                --arg hash ${{ github.event.commits[0].id }} \
-                --arg author ${{ github.event.commits[0].author.name }} \
-                --arg date ${{ github.event.commits[0].timestamp }} \
-                --arg message ${{ github.event.commits[0].message }} \
-                '{hash: $hash, author: $author, date: $date, message: $message}'
+                --arg hash "${{ github.event.commits[0].id }}" \
+                --arg author "${{ github.event.commits[0].author.name }}" \
+                --arg date "${{ github.event.commits[0].timestamp }}" \
+                --arg message "${{ github.event.commits[0].message }}" \
                 '$ARGS.named'
               )
               echo "$JSON"
