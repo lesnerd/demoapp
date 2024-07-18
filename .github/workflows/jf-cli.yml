@@ -56,7 +56,7 @@ jobs:
       - name: Release Info Evidence
         run: |
           echo "EVENT NAME: ${{ github.event_name }}"
-          if [ "${{ github.event_name }}" == "push" ] || [ "${{ github.event_name }}" == "release" ]; then
+          if [ "${{ github.event_name }}" == "push" ]; then
               echo "Push event"
               JSON=$(jq -n \
                 --arg commit ${{ github.event.commits[0].id }} \
