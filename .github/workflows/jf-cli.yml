@@ -80,6 +80,5 @@ jobs:
               echo "Release: ${{ toJson(github.event.release) }}"
           fi
         
-          
           echo "event object:"
           echo "github.event: ${{ toJson(github.event) }}"
