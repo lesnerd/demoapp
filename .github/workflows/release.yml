@@ -1,0 +1,50 @@
+name: Print PRs and Reviews
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  print-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get pull requests merged into this release
+        id: get-prs
+        run: |
+          # Get the release tag from the context
+          release_tag=${{ github.event.release.tag_name }}
+          # Use GraphQL API to query pull requests merged into the release tag
+          graphql_query='query { 
+            repository(owner: "OWNER", name: "REPO") {
+              release(ref: "refs/tags/$release_tag") {
+                pullRequests(first: 100) {
+                  nodes {
+                    title
+                    url
+                    reviews(first: 100) {
+                      nodes {
+                        author {
+                          login
+                        }
+                        state
+                        body
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }'
+
+          # Replace "OWNER" and "REPO" with your actual repository details
+          echo "$graphql_query" | curl --header 'Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' https://api.github.com/graphql | jq -r '.data.repository.release.pullRequests.nodes[]' > prs.json
+
+      - name: Print pull requests and reviews
+        run: |
+          jq -r '.[] | "PR Title: \(.title)" + "\nPR URL: \(.url)" + "\nReviews:"' prs.json
+
+          # Loop through each review and print details
+          jq -r '.reviews.nodes[] | "\t- Reviewer: \(.author.login)" + "\t- State: \(.state)" + "\t- Body: \(.body)"' prs.json | sed 's/\\n/\t\t/g'
+
