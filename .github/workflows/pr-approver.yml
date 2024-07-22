@@ -1,17 +1,26 @@
-name: "Capture PR Approver"
+name: Pull Request Approval Info
+
 on:
   pull_request_review:
-    types: [submitted]
+    types:
+      - submitted
 
 jobs:
-  capture-approver:
+  get-approval-info:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: Echo Approver Username
-        if: github.event.review.state == 'approved'
-        run: |
-          echo "The PR was approved by ${GITHUB_ACTOR}"
-          # Here you might use GitHub API to fetch more details if needed
+      - name: Get PR info
+        id: pr-info
+        run: echo "::set-output name=pr-number::${{ github.event.pull_request.number }}"
+
+      - name: Get GitHub Pull Request Reviewers
+        id: reviews
+        uses: LiamPerson/get-reviews-action@v1.0
+        with:
+          RELEASES_JSON_FILE: ${{ steps.pr-info.outputs.pr-number }}-reviews.json
+
+      - name: Print Reviewers
+        run: cat ${{ steps.reviews.outputs.reviews_file_path }}
