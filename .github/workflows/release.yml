@@ -1,52 +1,30 @@
-name: Print PRs and Reviews
+name: Print Changelog
 
 on:
   release:
     types: [published]
 
 jobs:
-  print-prs:
+  print-changelog:
     runs-on: ubuntu-latest
     steps:
-      - name: Run jq
-        uses: sergeysova/jq-action@v2
       - uses: actions/checkout@v3
 
-      - name: Get pull requests merged into this release
-        id: get-prs
+      - name: Get previous release tag
+        id: get-previous-tag
         run: |
-          # Get the release tag from the context
-          release_tag=${{ github.event.release.tag_name }}
-          # Use GraphQL API to query pull requests merged into the release tag
-          graphql_query='query { 
-            repository(owner: "OWNER", name: "REPO") {
-              release(ref: "refs/tags/$release_tag") {
-                pullRequests(first: 100) {
-                  nodes {
-                    title
-                    url
-                    reviews(first: 100) {
-                      nodes {
-                        author {
-                          login
-                        }
-                        state
-                        body
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }'
+          # Get the current release tag from the context
+          current_tag=${{ github.event.release.tag_name }}
+          # Use Git API to get the previous tag (assuming tags are sorted by version)
+          previous_tag=$(git tag --sort version:refname | grep -P "^(?=.*$current_tag)" -Po "(?<=^v).*?(?=$)")
+          # Print the previous tag or message if not found
+          echo "Previous release tag: $previous_tag"
+          echo "::set-output name=previous_tag::$previous_tag"
 
-          # Replace "OWNER" and "REPO" with your actual repository details
-          echo "$graphql_query" | curl --header 'Authorization: Bearer ${{ secrets.GH_TOKEN }}' https://api.github.com/graphql | jq -r '.data.repository.release.pullRequests.nodes[]' > prs.json
-
-      - name: Print pull requests and reviews
-        run: |
-          jq -r '.[] | "PR Title: \(.title)" + "\nPR URL: \(.url)" + "\nReviews:"' prs.json
-
-          # Loop through each review and print details
-          jq -r '.reviews.nodes[] | "\t- Reviewer: \(.author.login)" + "\t- State: \(.state)" + "\t- Body: \(.body)"' prs.json | sed 's/\\n/\t\t/g'
-
+      - name: Print changelog
+        uses: metcalfc/changelog-generator@v4.3.1
+        with:
+          myToken: ${{ secrets.GITHUB_TOKEN }}
+          head-ref: ${{ github.sha }}
+          base-ref: ${{ steps.get-previous-tag.outputs.previous_tag }}
+          format: markdown  # Adjust format (optional)
