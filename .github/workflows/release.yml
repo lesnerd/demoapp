@@ -20,7 +20,6 @@ jobs:
 
   commit-since-last-release:
     runs-on: ubuntu-latest
-    needs: [ build ]
     steps:
       - name: Run jq
         uses: sergeysova/jq-action@v2
