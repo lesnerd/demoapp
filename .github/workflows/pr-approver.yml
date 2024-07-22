@@ -1,9 +1,11 @@
 name: Pull Request Approval Info
 
+# on pull request events approved by reviewers
 on:
   pull_request_review:
-    types:
-      - submitted
+    types: [submitted]
+    branches:
+      - main
 
 jobs:
   get-approval-info:
