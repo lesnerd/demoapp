@@ -36,4 +36,4 @@ jobs:
           echo "${{ steps.changes.outputs.log }}"
           echo "${{ steps.changes.outputs.log }}" | sed 's/%0A/\n/g' | sed 's/- \([a-f0-9]*\) \(.*\)/{ "id": "\1", "message": "\2" }/' | jq -s '{commits: .}'
           echo "____________________________"
-          echo "${{ toJson(steps.changes) }}"
+          echo "${{ toJson(steps) }}"
