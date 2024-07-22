@@ -41,7 +41,7 @@ jobs:
           }'
 
           # Replace "OWNER" and "REPO" with your actual repository details
-          echo "$graphql_query" | curl --header 'Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' https://api.github.com/graphql | jq -r '.data.repository.release.pullRequests.nodes[]' > prs.json
+          echo "$graphql_query" | curl --header 'Authorization: Bearer ${{ secrets.GH_TOKEN }}' https://api.github.com/graphql | jq -r '.data.repository.release.pullRequests.nodes[]' > prs.json
 
       - name: Print pull requests and reviews
         run: |
