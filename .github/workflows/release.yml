@@ -36,5 +36,6 @@ jobs:
           echo "${{ steps.changes.outputs.log }}"
           echo "${{ steps.changes.outputs.log }}" | sed 's/%0A/\n/g' | sed 's/- \([a-f0-9]*\) \(.*\)/{ "id": "\1", "message": "\2" }/' | jq -s '{commits: .}'
           echo "____________________________"
-          git log --pretty=format:"%h - %s (%an)" ${{ steps.changes.outputs.last-tag }}..HEAD > changelogs.txt
+          # git log --pretty=format:"%h - %s (%an)" ${{ steps.changes.outputs.last-tag }}..HEAD > changelogs.txt
+          git log --pretty ${{ steps.changes.outputs.last-tag }}..HEAD > changelogs.txt
           cat changelogs.txt
