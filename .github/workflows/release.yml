@@ -1,0 +1,19 @@
+name: On Release Collect Changelogs
+
+on:
+  release
+
+permissions:
+  contents: read
+
+jobs:
+  collect-changelogs:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+        - name: Collect Changelogs
+          run: |
+            echo "Collecting changelogs for release ${{ github.event.release.tag_name }}"
+            git log --pretty=format:"%h - %s (%an)" ${{ github.event.release.tag_name}}..HEAD > changelogs.txt
+            cat changelogs.txt
