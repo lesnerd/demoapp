@@ -80,12 +80,12 @@ jobs:
           if [ "${{ github.event_name }}" == "release" ]; then
               PREV_TAG=$(git describe --tags --abbrev=0 $(git rev-list --tags --skip=1 --max-count=1))
               CURRENT_TAG=${GITHUB_REF/refs\/tags\//}
+              echo $(git describe --tags --abbrev=0)
+              echo $(git rev-list --tags --skip=1 --max-count=1)
               echo "Fetching commits from $PREV_TAG to $CURRENT_TAG"
               
               # Use GitHub API to fetch commits between tags and save as JSON
-              curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                   "https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${PREV_TAG}...${CURRENT_TAG}" | \
-                   jq '.commits' > commits.json
+              curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${GITHUB_REPOSITORY}/compare/${PREV_TAG}...${CURRENT_TAG}" | jq '.commits' > commits.json
               echo "Commits saved as commits.json"
               cat commits.json
           fi
