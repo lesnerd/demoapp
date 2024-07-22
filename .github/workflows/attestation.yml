@@ -1,4 +1,4 @@
-name: Build Attested Docker Image
+name: Build Attested Docker Image - NOT RELEVANT
 
 on:
   push:
