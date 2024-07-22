@@ -8,6 +8,8 @@ jobs:
   print-prs:
     runs-on: ubuntu-latest
     steps:
+      - name: Run jq
+        uses: sergeysova/jq-action@v2
       - uses: actions/checkout@v3
 
       - name: Get pull requests merged into this release
