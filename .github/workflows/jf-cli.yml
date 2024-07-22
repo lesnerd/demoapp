@@ -108,8 +108,6 @@ jobs:
           echo "Changes since ${{ steps.changes.outputs.last-tag }}:"
           echo "${{ steps.changes.outputs.log }}"
           echo "${{ steps.changes.outputs.log }}" | sed 's/%0A/\n/g' | sed 's/- \([a-f0-9]*\) \(.*\)/{ "id": "\1", "message": "\2" }/' | jq -s '{commits: .}'
-          echo "_________________________________________________________"
-          echo ${{ toJson(github.event.pull_request) }}"
 
   sonar:
     runs-on: ubuntu-latest
