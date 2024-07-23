@@ -1,4 +1,4 @@
-name: On Release Collect Changelogs
+name: On Release Collect Change-Logs
 
 on:
   release
@@ -7,34 +7,29 @@ permissions:
   contents: read
 
 jobs:
-  collect-changelogs:
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v4
-        - name: Collect Changelogs
-          run: |
-            echo "Collecting changelogs for release ${{ github.event.release.tag_name }}"
-            git log --pretty=format:"%h - %s (%an)" ${{ github.event.release.tag_name}}..HEAD > changelogs.txt
-            cat changelogs.txt
-
   commit-since-last-release:
     runs-on: ubuntu-latest
     steps:
+      - name: Setup JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
       - name: Run jq
         uses: sergeysova/jq-action@v2
       - name: 📎 Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+        env:
+          JF_URL: ${{ vars.JF_URL }}
+          JF_USER: ${{ secrets.JF_USER }}
+          JF_PASSWORD: ${{ secrets.JF_PASSWORD }}
       - name: 📋 Get Commits since last Release
         id: changes
         uses: simbo/changes-since-last-release-action@v1.0.1
       - name: 📝 Output collected Data
         run: |
           echo "Changes since ${{ steps.changes.outputs.last-tag }}:"
-          echo "${{ steps.changes.outputs.log }}"
-          echo "${{ steps.changes.outputs.log }}" | sed 's/%0A/\n/g' | sed 's/- \([a-f0-9]*\) \(.*\)/{ "id": "\1", "message": "\2" }/' | jq -s '{commits: .}'
-          echo "____________________________"
           git log --pretty=format:'{%n  "commit": "%H",%n  "abbreviated_commit": "%h",%n  "tree": "%T",%n  "abbreviated_tree": "%t",%n  "parent": "%P",%n  "abbreviated_parent": "%p",%n  "refs": "%D",%n  "encoding": "%e",%n  "subject": "%s",%n  "sanitized_subject_line": "%f",%n  "body": "%b",%n  "commit_notes": "%N",%n  "verification_flag": "%G?",%n  "signer": "%GS",%n  "signer_key": "%GK",%n  "author": {%n    "name": "%aN",%n    "email": "%aE",%n    "date": "%aD"%n  },%n  "committer": {%n    "name": "%cN",%n    "email": "%cE",%n    "date": "%cD"%n  }%n},' ${{ steps.changes.outputs.last-tag }}..HEAD > changelogs.json
           cat changelogs.json
+          echo "____________________________"
+          jf rt ping
+          jf rt upload --url ${{ env.JF_URL }} --user ${{ env.JF_USER }} --password ${{ env.JF_PASSWORD }} --spec changelogs.json --build-name ${{ github.run_id }} --build-number ${{ github.run_number }} --fail-no-op
