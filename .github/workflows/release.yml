@@ -31,5 +31,12 @@ jobs:
           git log --pretty=format:'{%n  "commit": "%H",%n  "abbreviated_commit": "%h",%n  "tree": "%T",%n  "abbreviated_tree": "%t",%n  "parent": "%P",%n  "abbreviated_parent": "%p",%n  "refs": "%D",%n  "encoding": "%e",%n  "subject": "%s",%n  "sanitized_subject_line": "%f",%n  "body": "%b",%n  "commit_notes": "%N",%n  "verification_flag": "%G?",%n  "signer": "%GS",%n  "signer_key": "%GK",%n  "author": {%n    "name": "%aN",%n    "email": "%aE",%n    "date": "%aD"%n  },%n  "committer": {%n    "name": "%cN",%n    "email": "%cE",%n    "date": "%cD"%n  }%n},' ${{ steps.changes.outputs.last-tag }}..HEAD > changelogs.json
           cat changelogs.json
           echo "____________________________"
+          jf -v
+          echo artifactory url: ${{ vars.JF_URL }}
+          echo "Ping the server"
+          jf rt ping
+          echo "jf show config"
+          jf config show > f1
+          cat f1
           jf rt ping
           jf rt upload --url ${{ env.JF_URL }} --user ${{ env.JF_USER }} --password ${{ env.JF_PASSWORD }} --spec changelogs.json --build-name ${{ github.run_id }} --build-number ${{ github.run_number }} --fail-no-op
