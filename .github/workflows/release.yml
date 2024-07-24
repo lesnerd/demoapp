@@ -12,8 +12,8 @@ jobs:
     steps:
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
-        # with:
-          # version: 2.61.0
+        with:
+          version: 2.61.0
         env:
           JF_URL: ${{ vars.JF_URL }}
           JF_USER: ${{ secrets.JF_USER }}
@@ -29,12 +29,27 @@ jobs:
         uses: simbo/changes-since-last-release-action@v1.0.1
       - name: 📝 Output collected Data
         run: |
-          echo "Changes since ${{ steps.changes.outputs.last-tag }}:"
+          echo "Changes since ${{ steps.changes.outputs.last-tag }}:" 
           echo "__________________________"
-          git log ${{ steps.changes.outputs.last-tag }}..HEAD
-          echo "__________________________"
-          git log --pretty=format:'{%n  "commit": "%H",%n  "abbreviated_commit": "%h",%n  "tree": "%T",%n  "abbreviated_tree": "%t",%n  "parent": "%P",%n  "abbreviated_parent": "%p",%n  "refs": "%D",%n  "encoding": "%e",%n  "subject": "%s",%n  "sanitized_subject_line": "%f",%n  "body": "%b",%n  "commit_notes": "%N",%n  "verification_flag": "%G?",%n  "signer": "%GS",%n  "signer_key": "%GK",%n  "author": {%n    "name": "%aN",%n    "email": "%aE",%n    "date": "%aD"%n  },%n  "committer": {%n    "name": "%cN",%n    "email": "%cE",%n    "date": "%cD"%n  }%n},' ${{ steps.changes.outputs.last-tag }}..HEAD > changelogs_commits.json
-          cat changelogs_commits.json
+          git log --pretty=format:'{"commit":"%H","abbreviated_commit":"%h","tree":"%T","abbreviated_tree":"%t","parent":"%P","abbreviated_parent":"%p","refs":"%D","encoding":"%e","subject":"%s","sanitized_subject_line":"%f","body":"%b","commit_notes":"%N","verification_flag":"%G?","signer":"%GS","signer_key":"%GK","author":{"name":"%aN","email":"%aE","date":"%aD"},"commiter":{"name":"%cN","email":"%cE","date":"%cD"}}' ${{ steps.changes.outputs.last-tag }}..HEAD > tmp
+          output_file="output.json" # The file where the output will be saved
+          echo "[" > "$output_file"
+          total_lines=$(cat tmp | wc -l) # Get the total number of lines
+          echo $total_lines
+          current_line=0
+          while IFS= read -r line || [ -n "$line" ]; do
+            current_line=$((current_line + 1))
+            if [ "$current_line" -le "$total_lines" ]; then
+              echo "  $line," >> "$output_file"
+            else
+              echo "  $line" >> "$output_file"
+            fi
+          done < tmp
+          echo "]" >> "$output_file"
+          rm tmp
+          cat $output_file
+#          git log --pretty=format:'{%n  "commit": "%H",%n  "abbreviated_commit": "%h",%n  "tree": "%T",%n  "abbreviated_tree": "%t",%n  "parent": "%P",%n  "abbreviated_parent": "%p",%n  "refs": "%D",%n  "encoding": "%e",%n  "subject": "%s",%n  "sanitized_subject_line": "%f",%n  "body": "%b",%n  "commit_notes": "%N",%n  "verification_flag": "%G?",%n  "signer": "%GS",%n  "signer_key": "%GK",%n  "author": {%n    "name": "%aN",%n    "email": "%aE",%n    "date": "%aD"%n  },%n  "committer": {%n    "name": "%cN",%n    "email": "%cE",%n    "date": "%cD"%n  }%n},' ${{ steps.changes.outputs.last-tag }}..HEAD > changelogs_commits.json
+#          cat changelogs_commits.json
 #          echo "____________________________"
 #          jf rt upload changelogs_commits.json commons-dev-generic-local
 #          # --url ${{ env.JF_URL }}/artifactory --user ${{ env.JF_USER }} --password ${{ env.JF_PASSWORD }}
