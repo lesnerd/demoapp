@@ -54,6 +54,6 @@ function all_commits() {
 
 owner="lesnerd"
 repo="demoapp"
-GITHUB_TOKEN="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"
+GITHUB_TOKEN="<GITHUB_TOKEN>"
 
 all_commits "$owner" "$repo" "$GITHUB_TOKEN"
