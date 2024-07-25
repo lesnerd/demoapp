@@ -85,7 +85,7 @@ jobs:
 
           owner="lesnerd"
           repo="demoapp"
-          TOKEN="<GITHUB_TOKEN>"
+          TOKEN="${{ secrets.GITHUB_TOKEN }}"
 
           all_commits "$owner" "$repo" "$TOKEN"
 #          git log --pretty=format:'{"commit":"%H","abbreviated_commit":"%h","tree":"%T","abbreviated_tree":"%t","parent":"%P","abbreviated_parent":"%p","refs":"%D","encoding":"%e","subject":"%s","sanitized_subject_line":"%f","body":"%b","commit_notes":"%N","verification_flag":"%G?","signer":"%GS","signer_key":"%GK","author":{"name":"%aN","email":"%aE","date":"%aD"},"commiter":{"name":"%cN","email":"%cE","date":"%cD"}}' v14..HEAD > tmp
