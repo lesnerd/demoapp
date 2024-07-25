@@ -3,12 +3,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
-  release:
-    types: [created]
-#on: release
 
 permissions:
   # This is required for requesting the OIDC token
@@ -23,6 +17,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
+        with:
+          version: 2.61.0
         env:
           JF_URL: ${{ vars.JF_URL }}
           JF_USER: ${{ secrets.JF_USER }}
@@ -64,16 +60,9 @@ jobs:
                 --arg message "${{ github.event.commits[0].message }}" \
                 '$ARGS.named'
               )
-              echo "$JSON"
+              echo "$JSON" > output.json
           fi
-          if [ "${{ github.event_name }}" == "release" ]; then
-              echo "====== Release ======"
-              echo "Release: ${{ toJson(github.event.release) }}"
-          fi
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-              echo "====== Pull Request ======"
-              echo "PR: ${{ toJson(github.event.pull_request) }}"
-          fi
+          jf evd create --predicate output.json --predicate-type https://jfrog/build/code-review --repo-path commons-dev-generic-local/commons/file.txt@69d29925ba75eca8e67e0ad99d1132b47d599c206382049bc230f2edd2d3af30 --key ${{ secrets.RSA_PK }}
                 
   commit-since-last-release:
     runs-on: ubuntu-latest

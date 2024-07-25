@@ -87,5 +87,5 @@ jobs:
           TOKEN="${{ secrets.GITHUB_TOKEN }}"
 
           all_commits "$owner" "$repo" "$TOKEN"
-          echo "______________CREATING EVIDENCE______________"
-          jf evd create --predicate output.json --predicate-type https://jfrog/build/code-review --repo-path commons-dev-generic-local/commons/file.txt@69d29925ba75eca8e67e0ad99d1132b47d599c206382049bc230f2edd2d3af30 --key ${{ secrets.RSA_PK }}
+#          echo "______________CREATING EVIDENCE______________"
+#          jf evd create --predicate output.json --predicate-type https://jfrog/build/code-review --repo-path commons-dev-generic-local/commons/file.txt@69d29925ba75eca8e67e0ad99d1132b47d599c206382049bc230f2edd2d3af30 --key ${{ secrets.RSA_PK }}
