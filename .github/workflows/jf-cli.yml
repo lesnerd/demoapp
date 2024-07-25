@@ -67,9 +67,11 @@ jobs:
               echo "$JSON" > output.json
           fi
           echo "pwd is $PWD"
+          openssl genrsa -out private.pem 2048
+          openssl rsa -in private.pem -pubout -out public.pem
           echo "ls -l"
           ls -l
-          jf evd create --predicate /home/runner/work/demoapp/demoapp/output.json --predicate-type https://jfrog/build/code-review --repo-path commons-dev-generic-local/commons/file.txt@69d29925ba75eca8e67e0ad99d1132b47d599c206382049bc230f2edd2d3af30 --key ${{ secrets.RSA_PK }}
+          jf evd create --predicate /home/runner/work/demoapp/demoapp/output.json --predicate-type https://jfrog/build/code-review --repo-path commons-dev-generic-local/commons/file.txt@69d29925ba75eca8e67e0ad99d1132b47d599c206382049bc230f2edd2d3af30 --key /home/runner/work/demoapp/demoapp/private.pem
                 
   commit-since-last-release:
     runs-on: ubuntu-latest
