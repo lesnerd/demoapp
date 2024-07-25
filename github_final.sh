@@ -27,19 +27,18 @@ function all_commits() {
     jq -c '.[]' "$output_file" | while read -r commit_json; do
       commit_sha=$(echo "$commit_json" | jq -r '.commit')
       pull_request_numbers=$(curl -s -H "Authorization: token $GH_TOKEN" "https://api.github.com/repos/$owner/$repo/commits/$commit_sha/pulls" | jq -r '.[] | .number')
-      
+
       if [[ -n "$pull_request_numbers" ]]; then
         for pull_request_number in $pull_request_numbers; do
           # Use the pull request number to fetch review details
           reviewers=$(curl -s -H "Authorization: token $GH_TOKEN" "https://api.github.com/repos/$owner/$repo/pulls/$pull_request_number/reviews" | jq -r '.[] | {user: .user.login, state: .state, submitted_at: .submitted_at}')
           if [[ -n "$reviewers" && "$reviewers" != "[]" ]]; then
-            echo "reviewers: $reviewers"
             # Update the commit_json with pull_request_details
             commit_json=$(echo "$commit_json" | jq --argjson reviewers "$reviewers" '. + {pull_request_details: $reviewers}')
           fi
         done
       fi
-      
+
       # Write the commit_json to tmp_updated.json regardless of having pull request details or not
       echo "$commit_json" >> tmp_updated.json
     done
@@ -52,8 +51,8 @@ function all_commits() {
     cat $output_file
 }
 
-owner="<owner>"
-repo="<app>"
-TOKEN="<GH_TOKEN>"
+owner="lesnerd"
+repo="demoapp"
+TOKEN="<some_token>"
 
 all_commits "$owner" "$repo" "$TOKEN"
