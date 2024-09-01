@@ -1,0 +1,58 @@
+name: Promote to Production
+
+on:
+  workflow_dispatch
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  run-policy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install jfrog cli
+        uses: jfrog/setup-jfrog-cli@v4
+        with:
+          oidc-provider-name: evidence-demo
+          version: 2.64.1
+        env:
+          JF_URL: ${{ vars.JF_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_ACCESS_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install OPA
+        run: |
+          curl -L -o opa https://openpolicyagent.org/downloads/latest/opa_linux_amd64
+          chmod +x opa
+          sudo mv opa /usr/local/bin/
+
+      - name: Call GraphQL
+        run: |
+          ./scripts/graphql.sh ${{ vars.JF_URL }} ${{ secrets.JF_TOKEN }} ${{ vars.PROJECT }}-release-bundles-v2 ${{ vars.BUNDLE_NAME }} ${{ vars.VERSION }}
+          cat evidence_graph.json
+
+      - name: Run policy
+        id: run_policy
+        run: |
+          result=$(opa eval --input ./evidence_graph.json --data policy/policy.rego "data.greenpizza.output" | jq '.result[0].expressions[0].value.approved')
+          echo "RESULT=$result" >> $GITHUB_ENV
+
+      - name: Promote to Production
+        run: |
+          if [ "${{ env.RESULT }}" == "true" ]; then
+            opa eval --input ./evidence_graph.json --data policy/policy.rego "data.greenpizza.output" | jq '.result[0].expressions[0].value' > policy.json
+            cat policy.json
+            jf evd create --key "${{ secrets.PRIVATE_KEY }}" --key-alias CI-RSA-KEY \
+              --release-bundle ${{ vars.BUNDLE_NAME }} --release-bundle-version ${{ vars.VERSION }} --project ${{vars.PROJECT}} \
+              --predicate ./policy.json --predicate-type https://jfrog.com/evidence/approval/v1
+            jf release-bundle-promote ${{ vars.BUNDLE_NAME }} ${{ vars.VERSION }} PROD --signing-key PGP-RSA-2048 --project ${{ vars.PROJECT }}
+            echo "🚀 Succesfully promote to `PROD` environemnt" >> $GITHUB_STEP_SUMMARY
+          else
+            opa eval --input ./evidence_graph.json --data policy/policy.rego "data.greenpizza.output" | jq '.result[0].expressions[0].value'
+            echo "Fail promotion policy check"
+            exit 1
+          fi

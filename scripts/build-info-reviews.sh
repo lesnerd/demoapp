@@ -1,37 +1,22 @@
 #!/bin/bash
 
-function all_commits() {
+function allCommits() {
     local owner="$1"
     local repo="$2"
     local GH_TOKEN="$3"
-    # Get the commit details in JSON format for all commits since the last tag
-    git log --pretty=format:'{"commit":"%H","abbreviated_commit":"%h","tree":"%T","abbreviated_tree":"%t","parent":"%P","abbreviated_parent":"%p","refs":"%D","encoding":"%e","subject":"%s","sanitized_subject_line":"%f","body":"%b","commit_notes":"%N","verification_flag":"%G?","signer":"%GS","signer_key":"%GK","author":{"name":"%aN","email":"%aE","date":"%aD"},"commiter":{"name":"%cN","email":"%cE","date":"%cD"}}' v14..v15 > tmp
-    output_file="output.json" # The file where the output will be saved
-    echo "[" > "$output_file"
-    total_lines=$(cat tmp | wc -l) # Get the total number of lines
-    current_line=0
-    while IFS= read -r line || [ -n "$line" ]; do
-      current_line=$((current_line + 1))
-      if [ "$current_line" -le "$total_lines" ]; then
-        echo "  $line," >> "$output_file"
-      else
-        echo "  $line" >> "$output_file"
-      fi
-    done < tmp
-    echo "]" >> "$output_file"
-    rm tmp
-
-    > tmp_updated.json
+    local output_file="$4"
 
     # Iterate over each commit in output_file
     jq -c '.[]' "$output_file" | while read -r commit_json; do
-      commit_sha=$(echo "$commit_json" | jq -r '.commit')
+      commit_sha=$(echo "$commit_json" | jq -r '.revision')
+      # echo "Processing commit: $commit_sha"
       pull_request_numbers=$(curl -s -H "Authorization: token $GH_TOKEN" "https://api.github.com/repos/$owner/$repo/commits/$commit_sha/pulls" | jq -r '.[] | .number')
-
+      # echo "Pull request numbers: $pull_request_numbers"
       if [[ -n "$pull_request_numbers" ]]; then
         for pull_request_number in $pull_request_numbers; do
           # Use the pull request number to fetch review details
           reviewers=$(curl -s -H "Authorization: token $GH_TOKEN" "https://api.github.com/repos/$owner/$repo/pulls/$pull_request_number/reviews" | jq -r '.[] | {user: .user.login, state: .state, submitted_at: .submitted_at}')
+          # echo "Reviewers: $reviewers"
           if [[ -n "$reviewers" && "$reviewers" != "[]" ]]; then
             # Update the commit_json with pull_request_details
             commit_json=$(echo "$commit_json" | jq --argjson reviewers "$reviewers" '. + {pull_request_details: $reviewers}')
@@ -51,8 +36,4 @@ function all_commits() {
     cat $output_file
 }
 
-owner="lesnerd"
-repo="repo"
-TOKEN="<ght>"
-
-all_commits "$owner" "$repo" "$TOKEN"
+# all_commits $1 $2 $3 $4

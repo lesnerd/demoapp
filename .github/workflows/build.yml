@@ -1,0 +1,207 @@
+name: Build greenpizza
+
+on:
+  [push, workflow_dispatch]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  Docker-build:
+    runs-on: ubuntu-latest
+    outputs:
+      VERSION: ${{ steps.update_version.outputs.VERSION }}
+    steps:
+      - name: Increment and update shared variable
+        id: update_version
+        run: |
+          current_value=$(curl -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/actions/variables/VERSION | jq -r '.value')
+          echo "Current value: $current_value"
+          new_value=$((current_value + 1))
+          echo "New value: $new_value"
+          curl -X PATCH -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"name\":\"VERSION\",\"value\":\"$new_value\"}" \
+            https://api.github.com/repos/${{ github.repository }}/actions/variables/VERSION
+          echo "VERSION=$new_value" >> $GITHUB_OUTPUT
+          echo "VERSION=$new_value" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Install jfrog cli
+        uses: jfrog/setup-jfrog-cli@v4
+        with:
+          oidc-provider-name: evidence-demo
+          version: 2.64.1
+        env:
+          JF_URL: ${{ vars.JF_URL }}
+
+      - uses: actions/checkout@v4
+
+      - name: Use shared variable
+        run: |
+          JFROG_CLI_BUILD_NAME=${{ vars.BUILD_NAME }}
+          JFROG_CLI_BUILD_NUMBER=${{ env.VERSION }}
+          echo "JFROG_CLI_BUILD_NAME=${JFROG_CLI_BUILD_NAME}"
+          echo "JFROG_CLI_BUILD_NUMBER=${JFROG_CLI_BUILD_NUMBER}"
+          echo "Build name: ${{ vars.BUILD_NAME }}"
+          echo "Build number: ${{ env.VERSION }}"
+          echo "get from previous step: ${{ steps.update_version.outputs.VERSION }}"
+          echo "VERSION=$JFROG_CLI_BUILD_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Collect commits into buildinfo
+        run: jfrog rt build-add-git ${{ vars.BUILD_NAME }} ${{ env.VERSION }}
+
+      - name: Log in to Artifactory Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.JF_URL }}
+          username: ${{ secrets.JF_USER }}
+          password: ${{ secrets.ARTIFACTORY_ACCESS_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+          install: true
+
+      - name: Build Docker image
+        run: |
+          URL=$(echo ${{ vars.JF_URL }} | sed 's|^https://||')
+          REPO_URL=${URL}'/${{ vars.PROJECT }}-docker-dev-virtual'
+          docker build --build-arg REPO_URL=${REPO_URL} -f go-server/Dockerfile . \
+          --tag ${REPO_URL}/${{ vars.PROJECT }}-app:${{ env.VERSION }} \
+          --output=type=image --platform linux/amd64 --metadata-file=build-metadata --push
+          jfrog rt build-docker-create ${{ vars.PROJECT }}-docker-dev --image-file build-metadata --build-name ${{ vars.BUILD_NAME }} --build-number ${{ env.VERSION }}
+
+      - name: Build Docker image moderation
+        run: |
+          URL=$(echo ${{ vars.JF_URL }} | sed 's|^https://||')
+          REPO_URL=${URL}'/${{ vars.PROJECT }}-docker-dev-virtual'
+          docker build --build-arg REPO_URL=${REPO_URL} -f moderation/Dockerfile . \
+          --tag ${REPO_URL}/call-moderation:${{ env.VERSION }} \
+          --output=type=image --platform linux/amd64 --metadata-file=build-metadata --push
+          echo "Build Docker image moderation"
+          jfrog rt build-docker-create ${{ vars.PROJECT }}-docker-dev --image-file build-metadata --build-name ${{ vars.BUILD_NAME }} --build-number ${{ env.VERSION }}
+
+      - name: Evidevce on docker
+        run: |
+          echo '{ "actor": "${{ github.actor }}", "date": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'" }' > sign.json
+          jf evd create --key "${{ secrets.PRIVATE_KEY }}" --key-alias CI-RSA-KEY \
+            --subject-repo-path ${{ vars.PROJECT }}-docker-dev/${{ vars.PROJECT }}-app/${{ env.VERSION }}/list.manifest.json \
+            --predicate ./sign.json --predicate-type https://jfrog.com/evidence/signature/v1 
+          jf evd create --key "${{ secrets.PRIVATE_KEY }}" --key-alias CI-RSA-KEY \
+            --subject-repo-path ${{ vars.PROJECT }}-docker-dev/call-moderation/${{ env.VERSION }}/list.manifest.json \
+            --predicate ./sign.json --predicate-type https://jfrog.com/evidence/signature/v1 
+          echo '🔎 Evidence attached: `signature` :lock_with_ink_pen: ' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload readme file
+        run: |
+          jf rt upload ./README.md ${{ vars.PROJECT }}-generic-dev/readme/${{ env.VERSION }}/ --build-name ${{ vars.BUILD_NAME }} --build-number ${{ env.VERSION }}
+
+      - name: Publish build info
+        run: jfrog rt build-publish ${{ vars.BUILD_NAME }} ${{ env.VERSION }}
+
+  Evidence-on-build:
+    needs: Docker-build
+    outputs:
+      VERSION: ${{ steps.get_version.outputs.VERSION }}
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.Docker-build.outputs.VERSION }}
+    steps:
+      - name: Install jfrog cli
+        uses: jfrog/setup-jfrog-cli@v4
+        with:
+          oidc-provider-name: evidence-demo
+          version: 2.64.1
+        env:
+          JF_URL: ${{ vars.JF_URL }}
+
+      - uses: actions/checkout@v4
+
+      - name: Use shared variable
+        id: get_version
+        run: |
+          JFROG_CLI_BUILD_NAME=${{ vars.BUILD_NAME }}
+          JFROG_CLI_BUILD_NUMBER=${{ env.VERSION }}
+          echo "JFROG_CLI_BUILD_NAME=${JFROG_CLI_BUILD_NAME}"
+          echo "JFROG_CLI_BUILD_NUMBER=${JFROG_CLI_BUILD_NUMBER}"
+          echo "Build name: ${{ vars.BUILD_NAME }}"
+          echo "Build number: ${{ env.VERSION }}"
+          echo "VERSION=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+          echo "Github_output: $GITHUB_OUTPUT"
+
+      # sign the buildinfo file
+      - name: Sign build evidence
+        run: |
+          echo '{ "actor": "${{ github.actor }}", "date": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'" }' > sign.json
+          jf evd create --build-name ${{ vars.BUILD_NAME }} --build-number ${{ env.VERSION }} \
+            --predicate ./sign.json --predicate-type https://jfrog.com/evidence/build-signature/v1 \
+            --key "${{ secrets.PRIVATE_KEY }}" --key-alias CI-RSA-KEY
+          echo '🔎 Evidence attached: `build-signature` :lock_with_ink_pen: ' >> $GITHUB_STEP_SUMMARY
+
+      # Collect source code changelog information from github based on vcs information in buildinfo
+      - name: Create VCS evidence
+        run: |
+          source scripts/get-build-info.sh
+          echo "Calling getBuildInfo with BUILD_NAME: ${{ vars.BUILD_NAME }} and VERSION: ${{ env.VERSION }} and RT_API_KEY: ${{ secrets.RT_API_KEY }}"
+          getBuildInfo "${{ vars.BUILD_NAME }}" "${{ env.VERSION }}" "${{ secrets.RT_API_KEY }}"
+          
+          source scripts/build-info-reviews.sh
+          echo "Calling getBuildInfoReviews with BUILD_NAME: ${{ vars.BUILD_NAME }} and VERSION: ${{ env.VERSION }} and GH_TOKEN: ${{ secrets.GH_TOKEN }}"
+          allCommits "jfrog" "evidence-demo" "${{ secrets.GH_TOKEN }}" ./build_info.json > commits-evidence.json
+          cat ./commits-evidence.json          
+          
+          jf evd create --build-name ${{ vars.BUILD_NAME }} --build-number ${{ env.VERSION }} \
+            --predicate ./commits-evidence.json --predicate-type https://jfrog.com/evidence/changelog/v1 \
+            --key "${{ secrets.PRIVATE_KEY }}" --key-alias CI-RSA-KEY
+          echo '🔎 Evidence attached: `changelog` 📝 ' >> $GITHUB_STEP_SUMMARY
+          
+      # Connect to Sonar service, get scanning results and create evidence with the results 
+      - name: Sonar evidence
+        run: |
+          bash sonar/sonar-scan.sh > sonar-results.json
+          jf evd create --build-name ${{ vars.BUILD_NAME }} --build-number ${{ env.VERSION }} \
+            --predicate ./sonar-results.json --predicate-type https://jfrog.com/evidence/sonar-results/v1 \
+            --key "${{ secrets.PRIVATE_KEY }}" --key-alias CI-RSA-KEY
+          echo '🔎 Evidence attached: `sonar-results` 📡 ' >> $GITHUB_STEP_SUMMARY
+
+  Release-bundle:
+    needs: Evidence-on-build
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.Evidence-on-build.outputs.VERSION }}
+    steps:
+      - name: Install jfrog cli
+        uses: jfrog/setup-jfrog-cli@v4
+        with:
+          oidc-provider-name: evidence-demo
+          version: 2.64.1
+        env:
+          JF_URL: ${{ vars.JF_URL }}
+          JFROG_CLI_BUILD_NAME: ${{ vars.BUILD_NAME }}
+          JFROG_CLI_BUILD_NUMBER: ${{ env.VERSION }}
+
+      - name: Use shared variable
+        run: |
+          JFROG_CLI_BUILD_NAME=${{ vars.BUILD_NAME }}
+          JFROG_CLI_BUILD_NUMBER=${{ env.VERSION }}
+          echo "JFROG_CLI_BUILD_NAME=${JFROG_CLI_BUILD_NAME}"
+          echo "JFROG_CLI_BUILD_NUMBER=${JFROG_CLI_BUILD_NUMBER}"
+          echo "Build name: ${{ vars.BUILD_NAME }}"
+          echo "Build number: ${{ env.VERSION }}"
+          echo "VERSION=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+
+      - name: Create release bundle
+        run: |
+          echo '{ "files": [ {"build": "'"${{ vars.BUILD_NAME }}/${{ env.VERSION }}"'" } ] }' > bundle-spec.json
+          jf release-bundle-create ${{ vars.BUNDLE_NAME }} ${{ env.VERSION }} --signing-key PGP-RSA-2048 --spec bundle-spec.json --project ${{ vars.PROJECT }}
+          NAME_LINK=${{ vars.JF_URL }}'/ui/artifactory/lifecycle/?bundleName='${{ vars.BUNDLE_NAME }}'&bundleToFlash='${{ vars.BUNDLE_NAME }}'&repositoryKey=${{ vars.PROJECT }}-release-bundles-v2&activeKanbanTab=promotion'
+          VER_LINK=${{ vars.JF_URL }}'/ui/artifactory/lifecycle/?bundleName='${{ vars.BUNDLE_NAME }}'&bundleToFlash='${{ vars.BUNDLE_NAME }}'&releaseBundleVersion='${{ env.VERSION }}'&repositoryKey=${{ vars.PROJECT }}-release-bundles-v2&activeVersionTab=Version%20Timeline&activeKanbanTab=promotion'
+          echo '📦 Release bundle ['${{ vars.BUNDLE_NAME }}']('${NAME_LINK}'):['${{ env.VERSION }}']('${VER_LINK}') created' >> $GITHUB_STEP_SUMMARY

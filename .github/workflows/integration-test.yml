@@ -1,0 +1,76 @@
+name: Integration Test
+
+on:
+  workflow_dispatch
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  promote-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up jq
+        run: sudo apt-get install -y jq
+        
+      - name: Install jfrog cli
+        uses: jfrog/setup-jfrog-cli@v4
+        with:
+          oidc-provider-name: evidence-demo
+          version: 2.64.1
+        env:
+          JF_URL: ${{ vars.JF_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.ARTIFACTORY_ACCESS_TOKEN }}
+
+      - name: Use shared variable
+        run: |
+          JFROG_CLI_BUILD_NAME=${{ vars.BUILD_NAME }}
+          JFROG_CLI_BUILD_NUMBER=${{ vars.VERSION }}
+ 
+      - uses: actions/checkout@v4
+
+      - name: Log in to Artifactory Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ vars.JF_URL }}
+          username: ${{ secrets.JF_USER }}  
+          password: ${{ secrets.ARTIFACTORY_ACCESS_TOKEN }}
+   
+      # - name: Promote to QA
+      #   run: |
+      #     jf release-bundle-promote ${{ vars.BUNDLE_NAME }} ${{ env.VERSION }} QA --signing-key PGP-RSA-2048 --project ${{ vars.PROJECT }}
+      
+      - name: Get promote repo and Docker pull
+        run: |
+          source scripts/get-promote-repo.sh
+          get-promote-repo ${{ vars.JF_URL }} ${{ vars.BUNDLE_NAME }} ${{ vars.VERSION }} ${{ vars.PROJECT }} QA ${{ secrets.RT_API_KEY }} 
+          echo ${DOCKER_REPO}
+
+          URL=$(echo ${{ vars.JF_URL }} | sed 's|^https://||')
+          docker pull ${URL}/${{ vars.PROJECT }}-docker-qa/${{ vars.PROJECT }}-app:${{ vars.VERSION }}
+          docker run -d -p 9001:9001 ${URL}/${{ vars.PROJECT }}-docker-qa/${{ vars.PROJECT }}-app:${{ vars.VERSION }}
+          
+          docker pull ${URL}/${{ vars.PROJECT }}-docker-qa/call-moderation:${{ vars.VERSION }}
+          docker run -d -p 9002:8000 ${URL}/${{ vars.PROJECT }}-docker-qa/call-moderation:${{ vars.VERSION }}
+          sleep 10
+          
+      - name: Curl the containers
+        run: |
+          curl localhost:9001/hello
+          curl localhost:9002/moderate
+
+      - name: Integration Test
+        run: |
+          source scripts/itest.sh
+          iTest ${{ vars.VERSION }} > itest_results.json
+          cat itest_results.json
+          # if in test_results.json there is a test that failed, then exit with a non-zero code
+          if grep -q '"status": "failed"' itest_results.json; then
+              exit 1
+          fi
+          JF_LINK=${{ vars.JF_URL }}'/ui/artifactory/lifecycle/?bundleName='${{ vars.BUNDLE_NAME }}'&bundleToFlash='${{ vars.BUNDLE_NAME }}'&releaseBundleVersion='${{ vars.VERSION }}'&repositoryKey=release-bundles-v2&activeVersionTab=Version%20Timeline&activeKanbanTab=promotion'
+          echo 'Test on Release bundle ['${{ vars.BUNDLE_NAME }}':'${{ vars.VERSION }}']('${JF_LINK}') success' >> $GITHUB_STEP_SUMMARY
+          jf evd create --release-bundle ${{ vars.BUNDLE_NAME }} --release-bundle-version ${{ vars.VERSION }} --predicate ./itest_results.json --predicate-type https://jfrog.com/evidence/integration-test/v1 --key "${{ secrets.PRIVATE_KEY }}" --key-alias CI-RSA-KEY --project ${{vars.PROJECT}}
+          echo '🔎 Evidence attached: integration-test 🧪 ' >> $GITHUB_STEP_SUMMARY

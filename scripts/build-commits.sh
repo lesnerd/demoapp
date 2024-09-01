@@ -5,7 +5,7 @@ function all_commits() {
     local repo="$2"
     local GH_TOKEN="$3"
     # Get the commit details in JSON format for all commits since the last tag
-    git log --pretty=format:'{"commit":"%H","abbreviated_commit":"%h","tree":"%T","abbreviated_tree":"%t","parent":"%P","abbreviated_parent":"%p","refs":"%D","encoding":"%e","subject":"%s","sanitized_subject_line":"%f","body":"%b","commit_notes":"%N","verification_flag":"%G?","signer":"%GS","signer_key":"%GK","author":{"name":"%aN","email":"%aE","date":"%aD"},"commiter":{"name":"%cN","email":"%cE","date":"%cD"}}' v14..v15 > tmp
+    git log --pretty=format:'{"commit":"%H","abbreviated_commit":"%h","tree":"%T","abbreviated_tree":"%t","parent":"%P","abbreviated_parent":"%p","refs":"%D","encoding":"%e","subject":"%s","sanitized_subject_line":"%f","body":"%b","commit_notes":"%N","verification_flag":"%G?","signer":"%GS","signer_key":"%GK","author":{"name":"%aN","email":"%aE","date":"%aD"},"commiter":{"name":"%cN","email":"%cE","date":"%cD"}}' v1..v2 > tmp
     output_file="output.json" # The file where the output will be saved
     echo "[" > "$output_file"
     total_lines=$(cat tmp | wc -l) # Get the total number of lines
@@ -52,7 +52,7 @@ function all_commits() {
 }
 
 owner="lesnerd"
-repo="repo"
-TOKEN="<ght>"
+repo="demoapp"
+TOKEN="${{ secrets.GITHUB_TOKEN }}"
 
 all_commits "$owner" "$repo" "$TOKEN"
